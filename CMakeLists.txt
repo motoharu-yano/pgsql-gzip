@@ -45,4 +45,10 @@ install(FILES README LICENSE.md
         COMPONENT base
         )
 
+if (MSVC)
+  # disable warnings:
+  #  - 4267: conversion from 'size_t' to 'unsigned int', possible loss of data
+  add_definitions( "/wd4267" )
+endif(MSVC)
+
 add_subdirectory(code)
