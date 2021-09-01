@@ -14,8 +14,6 @@ include(CTest)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(PGSQL_GZIP_ShareDir "share/pgsql_gzip")
-
 # Detect clang, which masquerades as gcc.  CMake 2.6 doesn't know how to
 # detect it.
 string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
@@ -39,11 +37,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-array-bounds -fPIC -Wno-parentheses -Wno-logical-op-parentheses -Wno-format")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-deprecated -Wno-unused-function -fno-strict-aliasing -Wno-format -Wno-logical-op-parentheses -fPIC")
 endif()
-
-install(FILES README LICENSE.md
-        DESTINATION ${PGSQL_GZIP_ShareDir}
-        COMPONENT base
-        )
 
 if (MSVC)
   # disable warnings:
