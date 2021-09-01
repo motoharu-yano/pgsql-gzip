@@ -16,6 +16,9 @@ message("postgres: ${PostgreSQL_INCLUDE_DIRS}")
 
 include_directories(${PostgreSQL_INCLUDE_DIRS})
 
+# windows includes do not seem to be valid
+# but if fixed for valid (remove server from the path)
+# compilation produces "Cannot open include file: 'netdb.h': No such file or director" errors
 if(WIN32)
   include_directories(${PostgreSQL_INCLUDE_DIR}/server/port/win32)
   if(MSVC)
