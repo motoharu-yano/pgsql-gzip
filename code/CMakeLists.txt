@@ -1,9 +1,6 @@
-set (EXTENSION_PREFIX "lib")
-set (EXTENSION_SUFFIX "")
-
 set(EXTENSION gzip)
 
-############## zlib #################
+############## find zlib #################
 
 find_package(ZLIB REQUIRED)
 
@@ -11,7 +8,7 @@ message("zlib: ${ZLIB_INCLUDE_DIRS}")
 
 include_directories(${ZLIB_INCLUDE_DIRS})
 
-############## postgres #################
+############## find postgres #################
 
 find_package(PostgreSQL REQUIRED)
 
@@ -70,7 +67,7 @@ endif(MSVC)
 
 link_directories(${PostgreSQL_LIBRARY_DIRS})
 
-############## library #################
+############## define library #################
 
 add_library(${EXTENSION} SHARED pg_gzip.c)
 
@@ -82,8 +79,7 @@ if(WIN32)
 	target_link_libraries(${EXTENSION} postgres)
 endif(WIN32)
 
-#####################################
-#####################################
+############## find pg_regress #######################
 
 if(WIN32 AND NOT UNIX)
   set(PGREGRESS_BINARY "${PG_BINDIR}\\pg_regress.exe")
@@ -107,6 +103,8 @@ macro (run_pgregress arg var)
                   ERROR_STRIP_TRAILING_WHITESPACE)
 endmacro ()
 
+############## get bindir switch #######################
+
 set(PGREGRESS_BINDIR_SWITCH "")
 
 foreach(opt "bindir" "psqldir")
@@ -121,6 +119,8 @@ if (NOT ${PGREGRESS_BINDIR_SWITCH} STREQUAL "")
   set(PGREGRESS_BINDIR_SWITCH "--${PGREGRESS_BINDIR_SWITCH}=\"${PG_BINDIR}\"")
 endif()
 
+############## generate installation and test command parts #######################
+
 set(testPgSQLName "${CMAKE_CURRENT_BINARY_DIR}/pgsql_regress")
 set(installPgSQLName "${CMAKE_CURRENT_BINARY_DIR}/pgsql_install")
 set(PG_CURRENT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/")
@@ -132,26 +132,27 @@ if(WIN32 AND NOT UNIX)
   set(installPgSQLName "${installPgSQLName}.bat")
   set(installCopyCommand "copy /Y")
   set(installPgSQLBody "")
-  set(PG_RDKIT_LIB_SRC "${EXTENSION}.dll")
-  set(PG_RDKIT_LIB_DEST "${EXTENSION}.dll")
+  set(PG_GZIP_LIB_SRC "${EXTENSION}.dll")
+  set(PG_GZIP_LIB_DEST "${EXTENSION}.dll")
   string(REGEX REPLACE "/" "\\\\" PG_CURRENT_SOURCE_DIR ${PG_CURRENT_SOURCE_DIR})
   string(REGEX REPLACE "/" "\\\\" PG_CURRENT_BINARY_DIR ${PG_CURRENT_BINARY_DIR})
   string(REGEX REPLACE "/" "\\\\" PG_PKGLIBDIR ${PG_PKGLIBDIR})
 else(WIN32 AND NOT UNIX)
+  set (EXTENSION_PREFIX "lib")
   set(testPgSQLCommand "sh")
   set(testPgSQLName "${testPgSQLName}.sh")
   set(installPgSQLName "${installPgSQLName}.sh")
   set(installCopyCommand "cp")
   set(installPgSQLBody "set -x\n")
-  set(PG_RDKIT_LIB_SRC "${EXTENSION_PREFIX}${EXTENSION}.so")
-  set(PG_RDKIT_LIB_DEST "${EXTENSION}.so")
+  set(PG_GZIP_LIB_SRC "${EXTENSION_PREFIX}${EXTENSION}.so")
+  set(PG_GZIP_LIB_DEST "${EXTENSION}.so")
 endif(WIN32 AND NOT UNIX)
 
 set(testPgSQLBody "cd \"${PG_CURRENT_BINARY_DIR}\"\n"
     "\"${PGREGRESS_BINARY}\" --inputdir=sql "
-    "${PGREGRESS_BINDIR_SWITCH} rdkit-91 "
-    "props btree molgist bfpgist-91 sfpgist slfpgist fps reaction fmcs"
-    " ${avalonRegress} ${inchiRegress} ${jsonRegress}\n")
+    "${PGREGRESS_BINDIR_SWITCH} gzip\n")
+
+############## get control file and generate sql file #######################
 
 file(STRINGS ${PG_CURRENT_SOURCE_DIR}${EXTENSION}.control
     PG_EXTVERSION LIMIT_COUNT 1 REGEX default_version)
@@ -164,38 +165,35 @@ string(REGEX REPLACE "'" "" PG_EXTVERSION ${PG_EXTVERSION})
 
 if(MSVC)
   if(${CMAKE_GENERATOR} STREQUAL "NMake Makefiles")
-    set(PG_RDKIT_LIB_SRC "${PG_RDKIT_LIB_SRC}")
+    set(PG_GZIP_LIB_SRC "${PG_GZIP_LIB_SRC}")
   else(${CMAKE_GENERATOR} STREQUAL "NMake Makefiles")
-    set(PG_RDKIT_LIB_SRC "${CMAKE_BUILD_TYPE}\\${PG_RDKIT_LIB_SRC}")
+    set(PG_GZIP_LIB_SRC "${CMAKE_BUILD_TYPE}\\${PG_GZIP_LIB_SRC}")
   endif(${CMAKE_GENERATOR} STREQUAL "NMake Makefiles")
 endif(MSVC)
 
 configure_file("${PG_CURRENT_SOURCE_DIR}${EXTENSION}.sql.in"
                "${PG_CURRENT_BINARY_DIR}${EXTENSION}--${PG_EXTVERSION}.sql")
 
-file(GLOB files "update_sql/*.in")
-
-foreach(file ${files})
-  string(REPLACE ".in" "" output_name ${file})
-  configure_file(${file} ${output_name})
-endforeach()
+############## generate install and test bat/sh files #######################
 
 set(installPgSQLBody "${installPgSQLBody}"
     "${installCopyCommand} \"${PG_CURRENT_BINARY_DIR}${EXTENSION}--${PG_EXTVERSION}.sql\" \"${PG_EXTENSIONDIR}\"\n"
     "${installCopyCommand} \"${PG_CURRENT_SOURCE_DIR}${EXTENSION}.control\" \"${PG_EXTENSIONDIR}\"\n"
-    "${installCopyCommand} \"${PG_CURRENT_SOURCE_DIR}update_sql/\"*.sql \"${PG_EXTENSIONDIR}\"\n"
-    "${installCopyCommand} \"${PG_CURRENT_BINARY_DIR}${PG_RDKIT_LIB_SRC}\" "
-    "\"${PG_PKGLIBDIR}${PG_RDKIT_LIB_DEST}\"\n")
+    "${installCopyCommand} \"${PG_CURRENT_BINARY_DIR}${PG_GZIP_LIB_SRC}\" \"${PG_PKGLIBDIR}${PG_GZIP_LIB_DEST}\"\n")
 
 file(WRITE ${testPgSQLName} ${testPgSQLBody})
 
 file(WRITE ${installPgSQLName} ${installPgSQLBody})
 
-foreach(testDir sql data expected)
-  add_custom_command(TARGET ${EXTENSION}${EXTENSION_SUFFIX} PRE_BUILD
+############## copy testing prerequisites #######################
+
+foreach(testDir sql expected)
+  add_custom_command(TARGET ${EXTENSION} PRE_BUILD
       COMMAND "${CMAKE_COMMAND}" -E copy_directory
       "${PG_CURRENT_SOURCE_DIR}${testDir}" "${PG_CURRENT_BINARY_DIR}${testDir}")
 endforeach()
+
+############## print installation message #######################
 
 message("\n"
     "=====================================================================\n"
@@ -207,5 +205,7 @@ message("\n"
     "to install the PostgreSQL RDKit cartridge, then start again\n"
     "the PostgreSQL service\n"
     "=====================================================================\n")
+
+############## add test target #######################
 
 add_test(testPgSQL ${testPgSQLCommand} ${testPgSQLName})
