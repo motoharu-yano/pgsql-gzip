@@ -22,6 +22,8 @@ string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
 
 find_package(PostgreSQL REQUIRED)
 
+find_package(ZLIB REQUIRED)
+
 # setup our compiler flags:
 
 if(CMAKE_COMPILER_IS_GNUCXX)
