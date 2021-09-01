@@ -17,9 +17,9 @@ message("postgres: ${PostgreSQL_INCLUDE_DIRS}")
 include_directories(${PostgreSQL_INCLUDE_DIRS})
 
 if(WIN32)
-  include_directories(${PostgreSQL_INCLUDE_DIR}/port/win32)
+  include_directories(${PostgreSQL_INCLUDE_DIR}/server/port/win32)
   if(MSVC)
-    include_directories(${PostgreSQL_INCLUDE_DIR}/port/win32_msvc)
+    include_directories(${PostgreSQL_INCLUDE_DIR}/server/port/win32_msvc)
   endif(MSVC)
 endif(WIN32)
 
