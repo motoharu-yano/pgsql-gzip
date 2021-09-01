@@ -74,7 +74,7 @@ pg_gzip_free(void* opaque, void* ptr)
 /**
 * gzip an uncompressed bytea
 */
-Datum pg_gzip(PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum pg_gzip(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(pg_gzip);
 Datum pg_gzip(PG_FUNCTION_ARGS)
 {
@@ -138,7 +138,7 @@ Datum pg_gzip(PG_FUNCTION_ARGS)
 }
 
 
-Datum pg_gunzip(PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum pg_gunzip(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(pg_gunzip);
 Datum pg_gunzip(PG_FUNCTION_ARGS)
 {
