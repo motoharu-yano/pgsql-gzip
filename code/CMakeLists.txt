@@ -1,32 +1,31 @@
-################# intermediate cmake ########################
-
-createExportTestHeaders()
-
-if(RDK_BUILD_PGSQL)
-  add_subdirectory(PgSQL/rdkit)
-endif(RDK_BUILD_PGSQL)
-
-################# code cmake ########################
-
 set (EXTENSION_PREFIX "lib")
 set (EXTENSION_SUFFIX "")
 
+set(EXTENSION gzip)
+
+############## zlib #################
+
+find_package(ZLIB REQUIRED)
+
+message("zlib: ${ZLIB_INCLUDE_DIRS}")
+
+include_directories(${ZLIB_INCLUDE_DIRS})
+
+############## postgres #################
+
 find_package(PostgreSQL REQUIRED)
 
-set(EXTENSION rdkit)
-
 message("postgres: ${PostgreSQL_INCLUDE_DIRS}")
-add_definitions(-DRDK_TOOLKIT_VERSION="${RDKit_RELEASENAME}")
+
 include_directories(${PostgreSQL_INCLUDE_DIRS})
 
 if(WIN32)
-  include_directories(${PostgreSQL_INCLUDE_DIR}/server/port/win32)
+  include_directories(${PostgreSQL_INCLUDE_DIR}/port/win32)
   if(MSVC)
-    include_directories(${PostgreSQL_INCLUDE_DIR}/server/port/win32_msvc)
+    include_directories(${PostgreSQL_INCLUDE_DIR}/port/win32_msvc)
   endif(MSVC)
 endif(WIN32)
 
-add_definitions(-DRDKITVER="007600")
 if(NOT DEFINED PostgreSQL_ROOT)
   if(DEFINED ENV{PostgreSQL_ROOT})
     set(PostgreSQL_ROOT "$ENV{PostgreSQL_ROOT}")
@@ -69,14 +68,13 @@ if(MSVC)
   endif()
 endif(MSVC)
 
-# ------------------
-
 link_directories(${PostgreSQL_LIBRARY_DIRS})
-link_directories(${RDKit_LibDir})
 
-add_library(${EXTENSION} SHARED
-          adapter.cpp bfp_op.c cache.c guc.c low_gist.c mol_op.c
-          rdkit_gist.c bfp_gist.c bfp_gin.c bitstring.c rdkit_io.c rxn_op.c sfp_op.c)
+############## library #################
+
+add_library(${EXTENSION} SHARED pg_gzip.c)
+
+target_link_libraries(${EXTENSION} ${ZLIB_LIBRARIES})
 
 target_link_libraries(${EXTENSION} ${PostgreSQL_LIBRARIES})
 
@@ -84,27 +82,8 @@ if(WIN32)
 	target_link_libraries(${EXTENSION} postgres)
 endif(WIN32)
 
-# ------------------
-
-set(pgRDKitLibSuffix "")
-
-if(RDK_PGSQL_STATIC AND ((NOT MSVC) OR (MSVC AND RDK_INSTALL_DLLS_MSVC)))
-  set(pgRDKitLibSuffix "_static")
-endif()
-
-set(pgRDKitLibList "")
-
-set(pgRDKitLibList "${pgRDKitLibList}"
-    "MolDraw2D;MolTransforms;MolHash;FMCS;ChemReactions;ChemTransforms;"
-    "FileParsers;SmilesParse;Fingerprints;Subgraphs;Descriptors;"
-    "PartialCharges;SubstructMatch;GraphMol;EigenSolvers;DataStructs;Depictor;"
-    "RDGeometryLib;RDGeneral")
-
-foreach(pgRDKitLib ${pgRDKitLibList})
-  set(pgRDKitLibs "${pgRDKitLibs}${pgRDKitLib}${pgRDKitLibSuffix};")
-endforeach()
-
-target_link_libraries(${EXTENSION}${EXTENSION_SUFFIX} ${pgRDKitLibs})
+#####################################
+#####################################
 
 if(WIN32 AND NOT UNIX)
   set(PGREGRESS_BINARY "${PG_BINDIR}\\pg_regress.exe")
